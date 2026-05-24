@@ -1,0 +1,21 @@
+# 敏感配置
+email_config.json
+
+# 数据库文件
+*.db
+
+# 日志
+*.log
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.idea/
+.vscode/
+
+# 调试脚本
+*debug*.py
+*verify*.py
+*rebuild*.py

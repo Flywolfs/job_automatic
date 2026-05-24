@@ -1,0 +1,17 @@
+{
+    "right_to_work": {
+        "patterns": ["right to work", "work in Hong Kong", "entitled to work"],
+        "answer_value": "HK_Q_3217_V_3_A_3219",
+        "answer_label": "I have a temporary visa (eg. QMAS, TTPS, IANG)"
+    },
+    "expected_salary": {
+        "patterns": ["\\\\$5K.*\\\\$6K", "\\\\$60K.*\\\\$80K", "3292"],
+        "answer_value": "HK_Q_3292_V_1_A_3314",
+        "answer_label": "$60K"
+    },
+    "years_of_experience": {
+        "patterns": ["No experience.*1 year", "less than 1 year", "More than 5 years"],
+        "answer_strategy": "longest",
+        "answer_label": "More than 5 years / longest option"
+    }
+}

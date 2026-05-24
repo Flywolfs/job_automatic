@@ -1,0 +1,40 @@
+[
+  {
+    "date": "2026-05-20T21:54:39.218786+00:00",
+    "questions": [
+      "SELECT: question-HK_Q_3292_V_1 opts=['$5K', '$6K', '$7K', '$8K', '$9K', '$10K', '$11K', '$12K', '$13K', '$14K', '$15K', '$16K', '$17K', '$18K', '$19K', '$20K', '$25K', '$30K', '$35K', '$40K', '$50K', '$60K', '$80K', '$100K', '$120K or more']",
+      "SELECT: question-HK_Q_226_V_1 opts=['', 'No experience', 'Less than 1 year', '1 year', '2 years', '3 years', '4 years', '5 years', 'More than 5 years']",
+      "SELECT: question-HK_Q_3CD479B07DD4A885FDD6E868C4B145A5_V_1 opts=['', 'No experience', 'Less than 1 year', '1 year', '2 years', '3 years', '4 years', '5 years', 'More than 5 years']"
+    ]
+  },
+  {
+    "date": "2026-05-20T21:55:50.647051+00:00",
+    "questions": [
+      "RADIO: ",
+      "RADIO: ",
+      "SELECT: :rj: opts=['Please select a resumé', '11/5/26 - Chi Zhang Full-20260504.pdf', '19/2/26 - Chi Zhang Full-20260219.pdf']"
+    ]
+  },
+  {
+    "date": "2026-05-20T22:05:25.299340+00:00",
+    "questions": [
+      "RADIO: ",
+      "RADIO: ",
+      "SELECT: :rj: opts=['Please select a resumé', '11/5/26 - Chi Zhang Full-20260504.pdf', '19/2/26 - Chi Zhang Full-20260219.pdf']"
+    ]
+  },
+  {
+    "date": "2026-05-21T03:10:16.895668+00:00",
+    "questions": [
+      "RADIO: ​"
+    ]
+  },
+  {
+    "date": "2026-05-21T03:11:35.520006+00:00",
+    "questions": [
+      "RADIO: do you have technical pre-sales experience?",
+      "RADIO: do you have technical support experience?",
+      "SELECT: question-HK_Q_3379_V_1 opts=['Primary School', 'Junior secondary school (Form 3 / Secondary 3 or equivalent)', 'Senior secondary school (Form 5-6 / Secondary 6 / HKDSE / HKCEE or equivalent)', 'Foundational Certificate or equivalent (HKQF levels 1-2)', 'Certificate / Diploma or equivalent (HKQF level 3)', 'Associate degree / Higher Diploma or equivalent (HKQF level 4)', 'Bachelor degree or equivalent (HKQF level 5)', 'Postgraduate Diploma / Masters or equivalent (HKQF level 6)', 'Doctoral degree (HKQF level 7)']"
+    ]
+  }
+]
