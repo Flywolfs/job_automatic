@@ -38,16 +38,37 @@ def bb_close():
 
 
 def parse_posted_hours(text: str) -> int | None:
-    """'2h ago' → 2, '1d ago' → 24, 'Posted on 3d ago' → 72"""
+    """'2h ago' → 2, '1d ago' → 24, 'Listed two days ago' → 48, '30d+ ago' → 720"""
     if not text:
         return None
     text = text.lower().replace("posted on ", "").replace("posted ", "").replace("listed ", "").strip()
+
+    # 数字形式: "2h ago", "3d ago", "30d+ ago"
     m = re.match(r"(\d+)\s*h\w*\s*ago", text)
     if m:
         return int(m.group(1))
+    m = re.match(r"(\d+)\s*d\w*\+\s*ago", text)
+    if m:
+        return int(m.group(1)) * 24
     m = re.match(r"(\d+)\s*d\w*\s*ago", text)
     if m:
         return int(m.group(1)) * 24
+
+    # 文字形式: "two hours ago", "ten hours ago", "one day ago"
+    _WORD = {"one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,"ten":10,
+             "eleven":11,"twelve":12,"thirteen":13,"fourteen":14,"fifteen":15,"sixteen":16,
+             "seventeen":17,"eighteen":18,"nineteen":19,"twenty":20,"twenty one":21,"twenty two":22,
+             "twenty three":23,"twenty four":24,"twenty five":25,"twenty six":26,"twenty seven":27,
+             "twenty eight":28,"twenty nine":29,"thirty":30}
+    m = re.match(r"([a-z ]+)\s+hours?\s+ago", text)
+    if m:
+        return _WORD.get(m.group(1).strip())
+    m = re.match(r"([a-z ]+)\s+days?\s+ago", text)
+    if m:
+        val = _WORD.get(m.group(1).strip())
+        if val:
+            return val * 24
+
     return None
 
 
