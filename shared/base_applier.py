@@ -52,6 +52,7 @@ class BaseApplier:
 
         if mode == "unknown":
             print("  ⚠️ 找不到申请入口")
+            utils.bb_close()
             return ("skipped", "skipped")
 
         ok = self.execute_apply()
@@ -109,13 +110,14 @@ class BaseApplier:
 
         result, status = self.apply(job_url, job_title)
 
-        self._set_status(job_url, status)
         if result == "success":
             self._record_applied(job_url)
             print(f"✅ #{num_ref} → applied" if num_ref else "✅ applied")
         elif result == "external":
+            self._set_status(job_url, "external")
             print(f"⏭️ #{num_ref} 外链，已标记" if num_ref else "⏭️ 外链，已标记")
         else:
+            self._set_status(job_url, status)
             print(f"❌ #{num_ref} {status}" if num_ref else f"❌ {status}")
 
     def _lookup_title(self, job_url: str) -> str:

@@ -164,14 +164,16 @@ def apply_job(job_link: str, job_title: str):
     try:
         if json.loads(r).get("ext"):
             print("  ⚠️ 外链，需自行申请")
-            # 标记 can_auto_apply=0（兼容旧表）
+            # 标记 can_auto_apply=0 + last_apply_status（兼容旧表）
             conn = sqlite3.connect(str(DB_PATH))
             try: conn.execute("ALTER TABLE jobs ADD COLUMN can_auto_apply INTEGER DEFAULT 1")
             except sqlite3.OperationalError: pass
-            conn.execute("UPDATE jobs SET can_auto_apply=0 WHERE job_link=?", (job_link,))
+            try: conn.execute("ALTER TABLE jobs ADD COLUMN last_apply_status TEXT")
+            except sqlite3.OperationalError: pass
+            conn.execute("UPDATE jobs SET can_auto_apply=0, last_apply_status='external' WHERE job_link=?", (job_link,))
             conn.commit()
             conn.close()
-            return None
+            return "external"
     except: pass
 
     # ── 进入 Apply ──
@@ -303,6 +305,8 @@ def main():
             elif r == "unknown_questions":
                 set_last_status(conn, link, "unknown_questions")
                 print(f"  ⛔ 仍有未知问题")
+            elif r == "external":
+                print(f"  ⏭️ 外链")
             elif r is False:
                 set_last_status(conn, link, "failed")
                 print(f"  ❌ 提交失败")
@@ -331,6 +335,8 @@ def main():
     elif r == "unknown_questions":
         set_last_status(conn, job_link, "unknown_questions")
         print(f"⛔ #{num_ref} 暂停（有未知问题需人工处理）")
+    elif r == "external":
+        print(f"⏭️ #{num_ref} 外链，已标记")
     elif r is False:
         set_last_status(conn, job_link, "failed")
         print(f"❌ #{num_ref} 提交失败")
