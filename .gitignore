@@ -19,3 +19,5 @@ __pycache__/
 *debug*.py
 *verify*.py
 *rebuild*.py
+node_modules/
+.venv/

@@ -68,14 +68,16 @@
 | 6.2 | 按关键词统计柱状图 | P2 |
 | 6.3 | 每日新增职位趋势图 | P3 |
 
-## 7. 技术选型（待定）
+## 7. 技术选型（已确定）
 
-| 选项 | 方案 |
-|------|------|
-| 后端 | Python Flask / FastAPI（直接调用现有 crawl.py / apply_job.py） |
-| 前端 | React / Vue / 纯 HTML+JS |
-| 实时通信 | WebSocket（日志流）或 SSE（Server-Sent Events） |
-| 数据库 | 直接读 SQLite（现有 jobs.db） |
+| 选项 | 方案 | 理由 |
+|------|------|------|
+| 后端 | **FastAPI** | 原生异步，长任务不阻塞，支持 BackgroundTasks + SSE |
+| 前端 | **Vue 3** (Vite) | 上手快，v-model 双向绑定，Element Plus 开箱即用 |
+| 实时通信 | **SSE** (Server-Sent Events) | 单向推送日志，浏览器自动重连，零配置 |
+| 数据库 | SQLite（现有 jobs.db） | 直接读写，无额外依赖 |
+| CSS 框架 | Element Plus | 表格/表单/进度条组件齐全 |
+| 构建工具 | Vite | 快速开发，HMR 热更新 |
 
 ---
 
