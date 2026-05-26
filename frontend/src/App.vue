@@ -81,7 +81,11 @@
 
         <el-table :data="jobs" @selection-change="onSelect" v-loading="loading" stripe size="small" style="width:100%">
           <el-table-column type="selection" width="40"/>
-          <el-table-column prop="id" label="#" width="50" sortable/>
+          <el-table-column label="#" width="60">
+            <template #default="{ $index }">
+              {{ (pagination.page - 1) * pagination.perPage + $index + 1 }}
+            </template>
+          </el-table-column>
           <el-table-column prop="title" label="职位" min-width="250">
             <template #default="{row}">
               <a :href="row.job_link" target="_blank" style="color:#1a73e8;text-decoration:none;font-weight:500">
