@@ -110,6 +110,7 @@ async def list_jobs(
     platform: str = "jobsdb",
     keyword: str = "",
     status: str = "",
+    time_range: str = "",
     page: int = 1,
     per_page: int = 20,
     sort: str = "posted_hours",
@@ -132,6 +133,16 @@ async def list_jobs(
         where.append("last_apply_status='unknown_questions'")
     elif status == "failed":
         where.append("last_apply_status='failed'")
+
+    # 时间范围过滤（基于 posted_hours）
+    if time_range == "5d":
+        where.append("posted_hours IS NOT NULL AND posted_hours <= 120")
+    elif time_range == "5-10d":
+        where.append("posted_hours > 120 AND posted_hours <= 240")
+    elif time_range == "10-20d":
+        where.append("posted_hours > 240 AND posted_hours <= 480")
+    elif time_range == "20d+":
+        where.append("posted_hours > 480")
 
     allowed_sort = {"posted_hours", "salary", "title", "company"}
     sort_col = sort if sort in allowed_sort else "posted_hours"

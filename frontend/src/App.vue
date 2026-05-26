@@ -73,6 +73,12 @@
               <el-option label="未知问题" value="unknown_questions"/>
               <el-option label="失败" value="failed"/>
             </el-select>
+            <el-select v-model="filter.timeRange" placeholder="发布时间" clearable size="small" style="width:130px" @change="loadJobs">
+              <el-option label="5天内" value="5d"/>
+              <el-option label="5-10天" value="5-10d"/>
+              <el-option label="10-20天" value="10-20d"/>
+              <el-option label="20天以上" value="20d+"/>
+            </el-select>
             <el-button type="success" size="small" @click="batchApply" :disabled="selectedIds.length===0">
               批量投递 ({{ selectedIds.length }})
             </el-button>
@@ -81,11 +87,7 @@
 
         <el-table :data="jobs" @selection-change="onSelect" v-loading="loading" stripe size="small" style="width:100%">
           <el-table-column type="selection" width="40"/>
-          <el-table-column label="#" width="60">
-            <template #default="{ $index }">
-              {{ (pagination.page - 1) * pagination.perPage + $index + 1 }}
-            </template>
-          </el-table-column>
+          <el-table-column prop="id" label="#" width="50"/>
           <el-table-column prop="title" label="职位" min-width="250">
             <template #default="{row}">
               <a :href="row.job_link" target="_blank" style="color:#1a73e8;text-decoration:none;font-weight:500">
@@ -169,7 +171,7 @@ const applyResults = ref([])
 const logBox = ref(null)
 
 const config = reactive({ keywords: 'AI Agent,AI Developer,LLM Engineer,NLP,Generative AI', salaryFrom: 50000, salaryTo: 120000 })
-const filter = reactive({ keyword: '', status: '' })
+const filter = reactive({ keyword: '', status: '', timeRange: '' })
 const pagination = reactive({ page: 1, perPage: 20 })
 
 const statItems = computed(() => {
@@ -191,6 +193,7 @@ async function loadJobs() {
   try {
     const data = await api.jobs({
       platform: activePlatform.value, keyword: filter.keyword, status: filter.status,
+      time_range: filter.timeRange,
       page: pagination.page, per_page: pagination.perPage, sort: 'posted_hours', order: 'asc'
     })
     jobs.value = data.jobs
