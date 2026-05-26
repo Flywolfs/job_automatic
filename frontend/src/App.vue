@@ -40,7 +40,6 @@
               <el-button type="primary" @click="startCrawl" :loading="crawling" :disabled="crawling">
                 {{ crawling ? '爬取中...' : '开始爬取' }}
               </el-button>
-              <el-button v-if="crawling" @click="stopCrawl = true">停止</el-button>
             </el-space>
           </el-col>
         </el-row>
@@ -54,7 +53,6 @@
         </template>
         <div ref="logBox" style="max-height:200px;overflow-y:auto;background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:4px;font-family:monospace;font-size:13px;white-space:pre-wrap">
           <div v-for="(line, i) in crawlLog" :key="i">{{ line }}</div>
-          <div v-if="crawling" style="color:#888">⏳ 等待日志...</div>
         </div>
       </el-card>
 
@@ -72,6 +70,7 @@
               <el-option label="外链" value="external"/>
               <el-option label="未知问题" value="unknown_questions"/>
               <el-option label="失败" value="failed"/>
+              <el-option label="已失效" value="disabled"/>
             </el-select>
             <el-select v-model="filter.timeRange" placeholder="发布时间" clearable size="small" style="width:130px" @change="loadJobs">
               <el-option label="5天内" value="5d"/>
@@ -85,7 +84,7 @@
           </el-space>
         </template>
 
-        <el-table :data="jobs" @selection-change="onSelect" v-loading="loading" stripe size="small" style="width:100%">
+        <el-table :data="jobs" @selection-change="onSelect" v-loading="loading" stripe size="small" style="width:100%" :row-class-name="rowClass">
           <el-table-column type="selection" width="40"/>
           <el-table-column prop="id" label="#" width="50"/>
           <el-table-column prop="title" label="职位" min-width="250">
@@ -100,18 +99,25 @@
             </template>
           </el-table-column>
           <el-table-column prop="keyword" label="关键词" width="120"/>
-          <el-table-column prop="posted_hours" label="发布" width="80" sortable>
+          <el-table-column prop="posted_hours" label="发布" width="80">
             <template #default="{row}">
               {{ row.posted_hours ? (row.posted_hours<24 ? row.posted_hours+'h' : Math.floor(row.posted_hours/24)+'d') : '-' }}
             </template>
           </el-table-column>
-          <el-table-column label="状态" width="120">
+          <el-table-column label="状态" width="100">
             <template #default="{row}">
               <el-tag v-if="row.applied" type="success" size="small">✅ 已申请</el-tag>
+              <el-tag v-else-if="row.user_disabled" type="danger" size="small">🙅 失效</el-tag>
               <el-tag v-else-if="row.last_apply_status==='unknown_questions'" type="warning" size="small">⛔ 未知问题</el-tag>
               <el-tag v-else-if="!row.can_auto_apply" type="danger" size="small">🔗 外链</el-tag>
               <el-tag v-else-if="row.last_apply_status==='failed'" type="danger" size="small">❌ 失败</el-tag>
               <el-tag v-else type="info" size="small">待处理</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="70">
+            <template #default="{row}">
+              <el-button v-if="!row.user_disabled" type="danger" size="small" plain @click="disableJob(row)" title="标记失效">👎</el-button>
+              <el-button v-else type="success" size="small" plain @click="enableJob(row)" title="恢复">🔄</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -160,7 +166,6 @@ const activePlatform = ref('jobsdb')
 const loading = ref(false)
 const crawling = ref(false)
 const applying = ref(false)
-const stopCrawl = ref(false)
 const jobs = ref([])
 const totalJobs = ref(0)
 const selectedIds = ref([])
@@ -188,6 +193,10 @@ const statItems = computed(() => {
 const stats = ref({})
 async function loadStats() { stats.value = await api.stats(activePlatform.value) }
 
+function rowClass({ row }) {
+  return row.user_disabled ? 'row-disabled' : ''
+}
+
 async function loadJobs() {
   loading.value = true
   try {
@@ -206,7 +215,6 @@ function onSelect(rows) { selectedIds.value = rows.map(r => r.id) }
 
 async function startCrawl() {
   crawlLog.value = []
-  stopCrawl.value = false
   crawling.value = true
   try {
     await api.crawl({
@@ -214,18 +222,10 @@ async function startCrawl() {
       salary_from: config.salaryFrom, salary_to: config.salaryTo,
       platforms: [activePlatform.value], count: 100
     })
-    // SSE 监听日志
     const sse = createSSE('/crawl/stream', { platform: activePlatform.value })
     sse.onMessage(data => {
-      if (data.done) {
-        crawling.value = false
-        sse.close()
-        loadStats()
-        loadJobs()
-      } else if (data.lines) {
-        crawlLog.value.push(...data.lines)
-        nextTick(() => { if (logBox.value) logBox.value.scrollTop = logBox.value.scrollHeight })
-      }
+      if (data.done) { crawling.value = false; sse.close(); loadStats(); loadJobs() }
+      else if (data.lines) { crawlLog.value.push(...data.lines); nextTick(() => { if (logBox.value) logBox.value.scrollTop = logBox.value.scrollHeight }) }
     })
   } catch { crawling.value = false }
 }
@@ -245,10 +245,22 @@ async function batchApply() {
   } catch { applying.value = false }
 }
 
+async function disableJob(row) {
+  await api.disable(row.id, activePlatform.value)
+  row.user_disabled = 1
+}
+
+async function enableJob(row) {
+  await api.enable(row.id, activePlatform.value)
+  row.user_disabled = 0
+}
+
 watch(activePlatform, () => { loadStats(); loadJobs() })
 onMounted(() => { loadStats(); loadJobs() })
 </script>
 
 <style>
 body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5 }
+.el-table .row-disabled { background-color: #fff0f0 !important }
+.el-table .row-disabled:hover > td { background-color: #ffe0e0 !important }
 </style>

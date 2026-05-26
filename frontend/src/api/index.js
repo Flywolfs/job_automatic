@@ -17,6 +17,12 @@ export async function postJSON(url, body) {
   return res.json()
 }
 
+export async function patchJSON(url) {
+  const res = await fetch(`${BASE}${url}`, { method: 'PATCH' })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
 // SSE 连接，返回 { close, onMessage }
 export function createSSE(url, params = {}) {
   const qs = new URLSearchParams(params).toString()
@@ -38,4 +44,6 @@ export const api = {
   apply: (body) => postJSON('/apply', body),
   crawlStatus: () => fetchJSON('/crawl/status'),
   applyStatus: () => fetchJSON('/apply/status'),
+  disable: (id, platform) => patchJSON(`/jobs/${id}/disable?platform=${platform}`),
+  enable: (id, platform) => patchJSON(`/jobs/${id}/enable?platform=${platform}`),
 }

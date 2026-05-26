@@ -25,7 +25,8 @@ def init_db(db_path: str) -> sqlite3.Connection:
             applied_at TEXT,
             progress TEXT,
             can_auto_apply INTEGER DEFAULT 1,
-            last_apply_status TEXT
+            last_apply_status TEXT,
+            user_disabled INTEGER DEFAULT 0
         )
     """)
     conn.execute("""

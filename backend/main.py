@@ -41,6 +41,9 @@ def get_db(platform: str) -> sqlite3.Connection:
     db_path = PROJECT_ROOT / platform / "jobs.db"
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
+    # 兼容旧表：确保 user_disabled 列存在
+    try: conn.execute("ALTER TABLE jobs ADD COLUMN user_disabled INTEGER DEFAULT 0")
+    except sqlite3.OperationalError: pass
     return conn
 
 # ── SSE 日志流 ────────────────────────────
@@ -117,12 +120,17 @@ async def list_jobs(
     order: str = "asc",
 ):
     conn = get_db(platform)
-    where = ["is_active=1"]
+    where = []
     params = []
 
     if keyword:
         where.append("keyword=?")
         params.append(keyword)
+    if status == "disabled":
+        where.append("is_active=0")
+    elif not time_range:
+        where.append("is_active=1")  # 默认只显示活跃 job；有时间范围筛选时不过滤
+
     if status == "applied":
         where.append("applied=1")
     elif status == "pending":
@@ -133,6 +141,8 @@ async def list_jobs(
         where.append("last_apply_status='unknown_questions'")
     elif status == "failed":
         where.append("last_apply_status='failed'")
+    elif status == "disabled":
+        where.append("is_active=0")
 
     # 时间范围过滤（基于 posted_hours）
     if time_range == "5d":
@@ -154,7 +164,7 @@ async def list_jobs(
     # 分页
     offset = (page - 1) * per_page
     rows = conn.execute(
-        f"SELECT id,title,company,location,salary,posted_hours,job_link,keyword,applied,last_apply_status,can_auto_apply,applied_at "
+        f"SELECT id,title,company,location,salary,posted_hours,job_link,keyword,applied,last_apply_status,can_auto_apply,applied_at,user_disabled "
         f"FROM jobs WHERE {' AND '.join(where)} ORDER BY {sort_col} {dir_clause} LIMIT ? OFFSET ?",
         params + [per_page, offset]
     ).fetchall()
@@ -230,6 +240,27 @@ async def get_stats(platform: str = "jobsdb"):
     unknown = conn.execute("SELECT COUNT(*) FROM jobs WHERE last_apply_status='unknown_questions'").fetchone()[0]
     conn.close()
     return {"total": total, "today_new": today, "applied": applied, "external": external, "unknown_questions": unknown}
+
+# ── 手动失效/恢复 ──────────────────────────
+@app.patch("/api/jobs/{job_id}/disable")
+async def disable_job(job_id: int, platform: str = "jobsdb"):
+    """手动标记 job 为失效（is_active=0, user_disabled=1）"""
+    conn = get_db(platform)
+    try: conn.execute("ALTER TABLE jobs ADD COLUMN user_disabled INTEGER DEFAULT 0")
+    except sqlite3.OperationalError: pass
+    conn.execute("UPDATE jobs SET is_active=0, user_disabled=1 WHERE id=?", (job_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "disabled"}
+
+@app.patch("/api/jobs/{job_id}/enable")
+async def enable_job(job_id: int, platform: str = "jobsdb"):
+    """恢复手动失效的 job（is_active=1, user_disabled=0）"""
+    conn = get_db(platform)
+    conn.execute("UPDATE jobs SET is_active=1, user_disabled=0 WHERE id=?", (job_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "enabled"}
 
 # ── 配置 ──────────────────────────────────
 @app.get("/api/config")
