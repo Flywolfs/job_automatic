@@ -98,13 +98,36 @@ class BaseCrawler:
             return
 
         keywords = [k.strip() for k in args.keyword.split(",")]
+        session_start = datetime.now(timezone.utc)  # 爬取会话起始时间戳
+
         self.log.info("🚀 %s 爬虫 | 关键词: %s | 薪资: %s | 目标: %d",
                       self.PLATFORM, keywords, args.salary or "不限", args.count)
 
         for kw in keywords:
             self.crawl(kw, args.count, args.salary)
 
+        # ── 爬取后维护 ──
         conn = dbutil.init_db(str(self.db_path))
+        session_start_str = session_start.strftime("%Y-%m-%d %H:%M:%S")
+
+        # 1. Aging: 本轮未爬到的 job，posted_hours 按流逝时间递增
+        aged = conn.execute("""
+            UPDATE jobs SET posted_hours = posted_hours +
+                CAST((julianday('now') - julianday(last_seen)) * 24 AS INTEGER)
+            WHERE is_active = 1
+              AND posted_hours IS NOT NULL
+              AND last_seen < ?
+        """, (session_start_str,)).rowcount
+        self.log.info("🕐 Aging: %d 个未命中 job 的 posted_hours 已更新", aged)
+
+        # 2. 超过 20 天（480h）标记失效
+        expired = conn.execute(
+            "UPDATE jobs SET is_active = 0 WHERE is_active = 1 AND posted_hours > 480"
+        ).rowcount
+        if expired:
+            self.log.info("🗑️ 失效: %d 个 job 超过 20 天，标记 is_active=0", expired)
+
+        conn.commit()
         total, today, ext, applied, unknown = dbutil.stats(conn)
         self.log.info("📊 完成 | 活跃: %d | 今日新: %d | 已申: %d | 外链: %d | 待处理: %d",
                       total, today, applied, ext, unknown)
